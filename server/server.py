@@ -73,17 +73,61 @@ def handle_client(client_socket):
 
 
 
+        # elif role == "CHEF":
+        #     chef_handler = Chef()
+        #     if command == "RECOMMEND_MEALS":
+        #         response = chef_handler.recommend_meals(*args)
+        #     else:
+        #         response = "Invalid command for Chef"
+
         elif role == "CHEF":
-            chef_handler = Chef()
-            if command == "RECOMMEND_MEALS":
-                response = chef_handler.recommend_meals(*args)
+            chef_handler = Chef(role, "gaurav")  # Adjust as needed
+            if command == "VOTE_FOR_MEAL":
+                if len(args) == 1:  # Ensure correct number of arguments
+                    meal_id = int(args[0])  # Convert meal_id to int
+                    response = chef_handler.vote_for_meal(meal_id)
+                else:
+                    response = "Invalid number of arguments for VOTE_FOR_MEAL command"
+            elif command == "GIVE_FEEDBACK":
+                if len(args) == 3:  # Ensure correct number of arguments
+                    meal_id = int(args[0])
+                    rating = int(args[1])
+                    comment = args[2]
+                    response = chef_handler.give_feedback(meal_id, rating, comment)
+                else:
+                    response = "Invalid number of arguments for GIVE_FEEDBACK command"
+            elif command == "VIEW_NOTIFICATIONS":
+                response = chef_handler.view_notifications()
+            elif command == "VIEW_TODAYS_MENU":
+                response = chef_handler.view_todays_menu()
             else:
                 response = "Invalid command for Chef"
 
+
         elif role == "EMPLOYEE":
-            employee_handler = Employee()
-            # Handle commands for Employee role (e.g., VOTE_FOR_MEAL, GIVE_FEEDBACK, SEE_MENU)
-            response = "Command not supported for Employee"
+            employee_handler = Employee(1,role, "Admin")  # Adjust as needed
+
+            if command == "VOTE_FOR_MEAL":
+                if len(args) == 1:  # Ensure correct number of arguments
+                    meal_id = int(args[0])  # Convert meal_id to int
+                    response = employee_handler.vote_for_meal(meal_id)
+                else:
+                    response = "Invalid number of arguments for VOTE_FOR_MEAL command"
+
+            elif command == "GIVE_FEEDBACK":
+                if len(args) == 3:  # Ensure correct number of arguments
+                    print("args ", args)
+                    meal_id = int(args[0])
+                    rating = int(args[1])
+                    comment = args[2]
+                    response = employee_handler.give_feedback(meal_id, rating, comment)
+                else:
+                    response = "Invalid number of arguments for GIVE_FEEDBACK command"
+
+            elif command == "SEE_MENU":
+                response = employee_handler.see_menu()
+            else:
+                response = "Invalid command for Employee"
 
         else:
             response = "Invalid role"
