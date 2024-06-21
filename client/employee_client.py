@@ -6,11 +6,12 @@ def employee_menu():
         print("2. Give Feedback")
         print("3. View Notifications")
         print("4. View Today's Menu")
+        print("5. Logout")
         choice = input("Enter your choice: ")
 
         if choice == '1':
-            meal_id = input("Enter meal ID: ")
-            request = f"VOTE_MEAL|{meal_id}"
+            # meal_id = input("Enter meal ID: ")
+            request = f"EMPLOYEE|VOTE_MEAL"
             response = send_request(request)
             print(response)
 
@@ -27,9 +28,18 @@ def employee_menu():
             response = send_request(request)
             print(response)
 
+
         elif choice == '4':
-            print("Returning to main menu...")
-            break
+
+            request = "EMPLOYEE|VIEW_TODAY_MENU"
+            response = send_request(request)
+            print(response)
+        elif choice == '5':
+            request = f"EMPLOYEE|LOGOUT"
+            response = send_request(request)
+            print(response)
+            if "Logout from Admin Successfull!!" in response:
+                return True
 
         else:
             print("Invalid choice. Please try again.")

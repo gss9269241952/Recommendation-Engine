@@ -50,8 +50,11 @@ def admin_menu():
             print(response)
 
         elif choice == '6':
-            print("Exiting...")
-            break
+            request = f"ADMIN|LOGOUT"
+            response = send_request(request)
+            print(response)
+            if "Logout from Admin Successfull!!" in response:
+                return True
 
         else:
             print("Invalid choice. Please try again.")

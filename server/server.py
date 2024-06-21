@@ -3,7 +3,36 @@ import threading
 from server.admin import Admin
 from server.chef import Chef
 from server.employee import Employee
+from server.database import get_db_connection
 
+def authenticate_user(username, password):
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        # Query to fetch user details based on username and password
+        cursor.execute("""
+            SELECT userID, role
+            FROM User
+            WHERE name = %s AND password = %s
+        """, (username, password))
+
+        user = cursor.fetchone()
+
+        if user:
+            user_id = user[0]
+            role = user[1]
+            return user_id, role.lower()
+        else:
+            return None, None
+
+    except Exception as e:
+        print(f"Error during authentication: {e}")
+        return None, None
+
+    finally:
+        cursor.close()
+        connection.close()
 def handle_client(client_socket):
     # Receive and handle client requests
     request = client_socket.recv(1024).decode().strip()  # Ensure no leading/trailing whitespace
@@ -68,6 +97,8 @@ def handle_client(client_socket):
                     response = admin_handler.check_availability(meal_id)
                 else:
                     response = "Invalid number of arguments for CHECK_AVAILABILITY command"
+            elif command == "LOGOUT":
+                response = "Logout from Admin Successfull!!"
             else:
                 response = "Invalid command for Admin"
 
@@ -82,41 +113,41 @@ def handle_client(client_socket):
 
         elif role == "CHEF":
             chef_handler = Chef(role, "gaurav")  # Adjust as needed
-            if command == "VOTE_FOR_MEAL":
-                if len(args) == 1:  # Ensure correct number of arguments
-                    meal_id = int(args[0])  # Convert meal_id to int
-                    response = chef_handler.vote_for_meal(meal_id)
+            if command == "RECOMMEND_MEALS":
+                if len(args) == 0:  # Ensure correct number of
+                    response = chef_handler.recommend_meals()
                 else:
-                    response = "Invalid number of arguments for VOTE_FOR_MEAL command"
-            elif command == "GIVE_FEEDBACK":
-                if len(args) == 3:  # Ensure correct number of arguments
-                    meal_id = int(args[0])
-                    rating = int(args[1])
-                    comment = args[2]
-                    response = chef_handler.give_feedback(meal_id, rating, comment)
+                    response = "Cannot fetch Recommended meals, Algo is down...."
+            elif command == "BROADCAST_MEALS":
+                if len(args) == 0:  # Ensure correct number of arguments
+                    response = chef_handler.broadcast_meals()
                 else:
-                    response = "Invalid number of arguments for GIVE_FEEDBACK command"
+                    response = "Can not Broadcastv meals Right now"
             elif command == "VIEW_NOTIFICATIONS":
                 response = chef_handler.view_notifications()
             elif command == "VIEW_TODAYS_MENU":
-                response = chef_handler.view_todays_menu()
+                response = chef_handler.get_today_menu()
+            elif command == "SHOW_MEAL_RATINGS":
+                response = chef_handler.get_ratings()
+            elif command == "LOGOUT":
+                response = "Logout from Chef Successfull!!"
             else:
                 response = "Invalid command for Chef"
 
 
         elif role == "EMPLOYEE":
-            employee_handler = Employee(1,role, "Admin")  # Adjust as needed
+            employee_handler = Employee(1,"gaurav", "Admin")  # Adjust as needed
 
-            if command == "VOTE_FOR_MEAL":
-                if len(args) == 1:  # Ensure correct number of arguments
-                    meal_id = int(args[0])  # Convert meal_id to int
-                    response = employee_handler.vote_for_meal(meal_id)
+            if command == "VOTE_MEAL":
+                if len(args) == 0:  # Ensure correct number of arguments
+                    # meal_id = int(args[0])  # Convert meal_id to int
+                    response = employee_handler.vote_for_meal()
                 else:
                     response = "Invalid number of arguments for VOTE_FOR_MEAL command"
 
             elif command == "GIVE_FEEDBACK":
                 if len(args) == 3:  # Ensure correct number of arguments
-                    print("args ", args)
+                    # print("args ", args)
                     meal_id = int(args[0])
                     rating = int(args[1])
                     comment = args[2]
@@ -126,6 +157,10 @@ def handle_client(client_socket):
 
             elif command == "SEE_MENU":
                 response = employee_handler.see_menu()
+            elif command == "VIEW_TODAY_MENU":
+                response = employee_handler.get_today_menu()
+            elif command == "LOGOUT":
+                response = "Logout from Employee Successfull!!"
             else:
                 response = "Invalid command for Employee"
 
