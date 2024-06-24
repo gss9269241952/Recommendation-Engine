@@ -7,7 +7,7 @@ class Admin:
         self.role = role
 
     def add_meal(self, meal_name, price, availability):
-        print("called add_meal")
+        # print("called add_meal")
         connection = get_db_connection()
         cursor = connection.cursor()
         availability = availability.lower() == 'yes'

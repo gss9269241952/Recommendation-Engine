@@ -10,5 +10,6 @@ def send_request(request):
 
 if __name__ == "__main__":
     request = "ADMIN|ADD_MEAL|meal1|10|yes"
+    # request = "ADMIN|CHANGE_PRICE||{new_price}"
     response = send_request(request)
     print("Client 1 Response:", response)

@@ -15,6 +15,8 @@ def run_server():
     start_server()
 
 def run_client():
+    import time
+    time.sleep(1)
     try:
         while True:
             username = input("Enter your username: ")
