@@ -2,30 +2,14 @@ from server.database import get_db_connection
 import numpy as np
 import json
 import datetime
+
+
 class Chef:
     def __init__(self,  role,name):
         # self.user_id = user_id
         self.name = name
         self.role = role
 
-    def pretty_print_recommend_meals(self,meals):
-        if not meals:
-            print("No meals to display.")
-            return
-
-        # Print table header
-        print("\nRecommended Meals:\n")
-        print("|| {:^10} || {:^12} || {:^15} || {:^22} ||".format("Meal ID", "Avg Rating", "Sentiment Score",
-                                                                  "Recommendation Score"))
-        print("||" + "-" * 14 + "++" + "-" * 14 + "++" + "-" * 17 + "++" + "-" * 24 + "||")
-
-        # Print each meal row
-        for meal in meals:
-            print(
-                f"|| {meal['meal_id']:>10} || {meal['avg_rating']:^12.1f} || {meal['sentiment_score']:^15.1f} || {meal['recommendation_score']:^22.1f} ||")
-
-        # Print table footer
-        print("||" + "-" * 14 + "++" + "-" * 14 + "++" + "-" * 17 + "++" + "-" * 24 + "||")
 
     #
     def recommend_meals(self):
@@ -75,7 +59,7 @@ class Chef:
 
             # Sort meals by recommendation score and return top 5
             top_meals = sorted(meal_scores, key=lambda x: x['recommendation_score'], reverse=True)[:5]
-            self.pretty_print_recommend_meals(top_meals)
+            # self.pretty_print_recommend_meals(top_meals)
 
             # Convert top_meals to JSON string
             top_meals_json = json.dumps(top_meals)
@@ -185,12 +169,15 @@ class Chef:
                 print(f"Today's Menu:")
                 print(f"Most Voted Food Item: {food_item_name} (Food Item ID: {food_item_id})")
                 print(f"Votes Received: {vote_count}")
-
-                return {
+                response = {
                     'foodItemID': food_item_id,
                     'itemName': food_item_name,
                     'voteCount': vote_count
                 }
+
+                j_menu = json.dumps(response)
+                return j_menu
+
             else:
                 error_msg = "No votes recorded for today yet."
                 return error_msg
@@ -224,7 +211,7 @@ class Chef:
                     'rating': row[2],
                     'comment': row[3]
                 })
-            self.pretty_print_ratings(ratings)
+            # self.pretty_print_ratings(ratings)
             cursor.close()
             connection.close()
             j_ratings = json.dumps(ratings)
@@ -235,10 +222,4 @@ class Chef:
             print(error_message)
             return []
 
-    def pretty_print_ratings(self, ratings):
-        print("\nRatings and Comments for Food Items:\n")
-        print("|| {:^10} || {:^30} || {:^10} || {:^50} ||".format("Food Item ID", "Food Item Name", "Rating", "Comment"))
-        print("||" + "-" * 14 + "++" + "-" * 34 + "++" + "-" * 14 + "++" + "-" * 52 + "||")
-        for rating in ratings:
-            print(f"|| {rating['foodItemID']:>12} || {rating['itemName']:^30} || {rating['rating']:>10} || {rating['comment']:^50} ||")
-        print("||" + "-" * 14 + "++" + "-" * 34 + "++" + "-" * 14 + "++" + "-" * 52 + "||")
+

@@ -1,29 +1,38 @@
-import threading
+import socket
 import sys
-import os
-
-# Add the project's root directory to the Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from server.server_code import start_server
+import time
 from client.admin_client import admin_menu
 from client.chef_client import chef_menu
 from client.employee_client import employee_menu
 from server.server_code import authenticate_user
 
-def run_server():
-    start_server()
+def send_request(request):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 9998))
+    client_socket.send(request.encode())
+    response = client_socket.recv(4096).decode()
+    client_socket.close()
+    return response
+
+# def authenticate_user(username, password):
+#     request = f"AUTH|{username}|{password}"
+#     response = send_request(request)
+#     print("response: ",response)
+#     if response.startswith("SUCCESS"):
+#         user_id, role = response.split('|')[1:]
+#         return user_id, role.lower()
+#     else:
+#         return None, None
 
 def run_client():
-    import time
-    time.sleep(1)
+    time.sleep(1)  # Ensure server starts first
     try:
         while True:
             username = input("Enter your username: ")
             password = input("Enter your password: ")
 
-            # Authenticate user based on username and password
             user_id, role = authenticate_user(username, password)
+            print("user id : ",user_id,"role :",role)
 
             if user_id:
                 break
@@ -39,17 +48,6 @@ def run_client():
         else:
             print("Invalid role")
 
-
     except KeyboardInterrupt:
         print("\nExiting...")
         sys.exit(0)
-
-if __name__ == "__main__":
-    server_thread = threading.Thread(target=run_server)
-    server_thread.start()
-
-    client_thread = threading.Thread(target=run_client)
-    client_thread.start()
-
-    server_thread.join()
-    client_thread.join()

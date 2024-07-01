@@ -4,11 +4,13 @@ from server.admin import Admin
 from server.chef import Chef
 from server.employee import Employee
 from server.database import get_db_connection
+import json
 
 def authenticate_user(username, password):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
+        print("authentication function")
 
         # Query to fetch user details based on username and password
         cursor.execute("""
@@ -159,6 +161,15 @@ def handle_client(client_socket):
                 response = employee_handler.see_menu()
             elif command == "VIEW_TODAY_MENU":
                 response = employee_handler.get_today_menu()
+                print(response)
+                # food_item_id = response['foodItemID']
+                # food_item_name = response.get('itemName')
+                # vote_count = response['voteCount']
+                # print(f"Today's Menu:")
+                # print(f"Most Voted Food Item: {food_item_name} (Food Item ID: {food_item_id})")
+                # print(f"Votes Received: {vote_count}")
+                #
+                # response = json.dumps(response)
             elif command == "LOGOUT":
                 response = "Logout from Employee Successfull!!"
             else:

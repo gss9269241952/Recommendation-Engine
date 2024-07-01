@@ -1,16 +1,29 @@
 # In client/admin_client.py
-from client.client import send_request
+import socket
+
+def send_request(request):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 9998))
+    client_socket.send(request.encode())
+    response = client_socket.recv(4096).decode()
+    client_socket.close()
+    return response
+
 
 
 def admin_menu():
     while True:
-        print("\nAdmin Menu:")
-        print("1. Add Meal")
-        print("2. Remove Meal")
-        print("3. Update Meal")
-        print("4. Change Price")
-        print("5. Check Availability")
-        print("6. Exit")
+        admin_menu = """------------------------------->
+    \nAdmin Menu:
+    1. Add Meal
+    2. Remove Meal
+    3. Update Meal
+    4. Change Price
+    5. Check Availability
+    6. Exit
+    ------------------------------->
+            """
+        print(admin_menu)
         choice = input("Enter your choice: ")
 
         if choice == '1':

@@ -1,18 +1,33 @@
-from client.client import send_request
+import socket
 
+def send_request(request):
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('localhost', 9998))
+    client_socket.send(request.encode())
+    response = client_socket.recv(4096).decode()
+    client_socket.close()
+    return response
 def employee_menu():
     while True:
-        print("1. Vote for Meal")
-        print("2. Give Feedback")
-        print("3. View Notifications")
-        print("4. View Today's Menu")
-        print("5. Logout")
+        employee_menu = """------------------------------->
+\nEmployee Menu:
+1. Vote for Meal
+2. Give Feedback
+3. View Notifications
+4. View Today's Menu
+5. Logout
+------------------------------->
+            """
+        print(employee_menu)
         choice = input("Enter your choice: ")
 
         if choice == '1':
             # meal_id = input("Enter meal ID: ")
             request = f"EMPLOYEE|VOTE_MEAL"
             response = send_request(request)
+            # print("\n=== Today's Top Meal Recommendations ===")
+            # print("Please vote for your preferred meal by entering the number:")
+            # print("========================================\n")
             print(response)
 
         elif choice == '2':
@@ -33,6 +48,7 @@ def employee_menu():
 
             request = "EMPLOYEE|VIEW_TODAY_MENU"
             response = send_request(request)
+
             print(response)
         elif choice == '5':
             request = f"EMPLOYEE|LOGOUT"

@@ -189,11 +189,11 @@ class Employee:
                 print(f"Most Voted Food Item: {food_item_name} (Food Item ID: {food_item_id})")
                 print(f"Votes Received: {vote_count}")
 
-                return {
+                return f"""({
                     'foodItemID': food_item_id,
                     'itemName': food_item_name,
                     'voteCount': vote_count
-                }
+                })"""
             else:
                 error_msg = "No votes recorded for today yet."
                 return error_msg
