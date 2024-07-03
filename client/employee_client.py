@@ -1,4 +1,5 @@
 import socket
+import json
 
 def send_request(request):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -7,7 +8,7 @@ def send_request(request):
     response = client_socket.recv(4096).decode()
     client_socket.close()
     return response
-def employee_menu():
+def employee_menu(user_id):
     while True:
         employee_menu = """------------------------------->
 \nEmployee Menu:
@@ -20,26 +21,48 @@ def employee_menu():
             """
         print(employee_menu)
         choice = input("Enter your choice: ")
-
         if choice == '1':
-            # meal_id = input("Enter meal ID: ")
-            request = f"EMPLOYEE|VOTE_MEAL"
+            request = f"EMPLOYEE|VOTE_MEAL|{user_id}"
             response = send_request(request)
-            # print("\n=== Today's Top Meal Recommendations ===")
-            # print("Please vote for your preferred meal by entering the number:")
-            # print("========================================\n")
-            print(response)
+            if response:
+                response_data = json.loads(response)
+                if response_data['status'] == 'success':
+                    recommendations = response_data['recommendations']
+                    print("\n=== Today's Top Meal Recommendations ===")
+                    print("Please vote for your preferred meal by entering the number:")
+                    print("========================================\n")
+                    for recommendation in recommendations:
+                        print(
+                            f"{recommendation['index']}. Meal ID: {recommendation['meal_id']}, Recommendation Score: {recommendation['recommendation_score']}, Category : {recommendation['Category']}")
+
+                    selected_option = int(input("\nEnter your choice (1-6): "))
+                    selected_meal = recommendations[selected_option - 1]
+                    print("selected_meal", selected_meal)
+
+                    # Sending vote back to the server
+                    vote_request = f"EMPLOYEE|STORE_VOTE|{selected_meal['meal_id']}|{user_id}"
+                    vote_response = send_request(vote_request)
+                    if vote_response:
+                        print(vote_response)
+                    else:
+                        print("Failed to store vote.")
+                else:
+                    print(response_data['message'])
+                    print(f"Error details: {response_data['error_details']}")
+            else:
+                print("Failed to get recommendations.")
+            # print(response)
 
         elif choice == '2':
             meal_id = input("Enter meal ID to give feedback for: ")
             rating = input("Enter rating (1-5): ")
             comment = input("Enter your comment: ")
-            request = f"EMPLOYEE|GIVE_FEEDBACK|{meal_id}|{rating}|{comment}"
+            request = f"EMPLOYEE|GIVE_FEEDBACK|{meal_id}|{rating}|{comment}|{user_id}"
             response = send_request(request)
             print(response)
 
         elif choice == '3':
-            request = "EMPLOYEE|SEE_MENU"
+            request = f"EMPLOYEE|NOTIFICATION|{user_id}"
             response = send_request(request)
             print(response)
 

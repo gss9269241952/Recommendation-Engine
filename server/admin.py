@@ -1,12 +1,14 @@
 from server.database import get_db_connection
 from datetime import datetime
+from server.utils import add_notification,get_all_employee_ids
+
 class Admin:
     def __init__(self, name, role):
         # self.user_id = user_id
         self.name = name
         self.role = role
 
-    def add_meal(self, meal_name, price, availability):
+    def add_meal(self, meal_name, price, availability,category):
         # print("called add_meal")
         connection = get_db_connection()
         cursor = connection.cursor()
@@ -16,12 +18,15 @@ class Admin:
         current_datetime = datetime.now()
 
         cursor.execute(
-            "INSERT INTO FoodItem (itemName, price, availability, date) VALUES (%s, %s, %s, %s)",
-            (meal_name, price, availability, current_datetime)
+            "INSERT INTO FoodItem (itemName, price, availability, date,category) VALUES (%s, %s, %s, %s, %s)",
+            (meal_name, price, availability, current_datetime, category)
         )
         connection.commit()
         cursor.close()
         connection.close()
+        employee_ids = get_all_employee_ids()
+        for employee_id in employee_ids:
+            add_notification(employee_id, f"New meal with name {meal_name} , price : {price} has been added by the admin.")
         return f"Meal '{meal_name}' added successfully."
 
     def remove_meal(self, meal_id):
@@ -32,6 +37,9 @@ class Admin:
         connection.commit()
         cursor.close()
         connection.close()
+        employee_ids = get_all_employee_ids()
+        for employee_id in employee_ids:
+            add_notification(employee_id,f"Meal id: '{meal_id}' removed successfully by the admin.")
         return f"Meal with ID '{meal_id}' removed successfully."
 
     def update_meal(self, meal_id, meal_name=None, price=None, availability=None):
@@ -49,6 +57,9 @@ class Admin:
         connection.commit()
         cursor.close()
         connection.close()
+        employee_ids = get_all_employee_ids()
+        for employee_id in employee_ids:
+            add_notification(employee_id, f"Meal id: '{meal_id}' updated successfully by the admin.")
         return f"Meal with ID '{meal_id}' updated successfully."
 
     def change_price(self, meal_id, new_price):
@@ -59,6 +70,9 @@ class Admin:
         connection.commit()
         cursor.close()
         connection.close()
+        employee_ids = get_all_employee_ids()
+        for employee_id in employee_ids:
+            add_notification(employee_id, f"Price for meal with ID '{meal_id}' changed to {new_price}.")
         return f"Price for meal with ID '{meal_id}' changed to {new_price}."
 
     def check_availability(self, meal_id):

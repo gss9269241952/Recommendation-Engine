@@ -32,7 +32,7 @@ def run_client():
             password = input("Enter your password: ")
 
             user_id, role = authenticate_user(username, password)
-            print("user id : ",user_id,"role :",role)
+            print("user id : ", user_id,"role :", role)
 
             if user_id:
                 break
@@ -40,11 +40,11 @@ def run_client():
                 print("Invalid credentials. Please try again.")
 
         if role == "admin":
-            admin_menu()
+            admin_menu(user_id,role)
         elif role == "chef":
             chef_menu()
         elif role == "employee":
-            employee_menu()
+            employee_menu(user_id)
         else:
             print("Invalid role")
 

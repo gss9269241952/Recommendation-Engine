@@ -11,7 +11,8 @@ def send_request(request):
 
 
 
-def admin_menu():
+def admin_menu(user_id, role):
+
     while True:
         admin_menu = """------------------------------->
     \nAdmin Menu:
@@ -21,7 +22,7 @@ def admin_menu():
     4. Change Price
     5. Check Availability
     6. Exit
-    ------------------------------->
+------------------------------->
             """
         print(admin_menu)
         choice = input("Enter your choice: ")
@@ -30,13 +31,14 @@ def admin_menu():
             meal_name = input("Enter meal name: ")
             price = input("Enter price: ")
             availability = input("Enter availability (yes/no): ")
-            request = f"ADMIN|ADD_MEAL|{meal_name}|{price}|{availability}"
+            category = input("Enter category (Breakfast/Lunch/Dinner) ")
+            request = f"ADMIN|ADD_MEAL|{meal_name}|{price}|{availability}|{user_id}|{category}"
             response = send_request(request)
             print(response)
 
         elif choice == '2':
             meal_id = input("Enter meal ID to remove: ")
-            request = f"ADMIN|REMOVE_MEAL|{meal_id}"
+            request = f"ADMIN|REMOVE_MEAL|{meal_id}|{user_id}"
             response = send_request(request)
             print(response)
 
@@ -45,14 +47,14 @@ def admin_menu():
             meal_name = input("Enter new meal name (leave blank to skip): ")
             price = input("Enter new price (leave blank to skip): ")
             availability = input("Enter new availability (yes/no, leave blank to skip): ")
-            request = f"ADMIN|UPDATE_MEAL|{meal_id}|{meal_name}|{price}|{availability}"
+            request = f"ADMIN|UPDATE_MEAL|{meal_id}|{meal_name}|{price}|{availability}|{user_id}"
             response = send_request(request)
             print(response)
 
         elif choice == '4':
             meal_id = input("Enter meal ID to change price: ")
             new_price = input("Enter new price: ")
-            request = f"ADMIN|CHANGE_PRICE|{meal_id}|{new_price}"
+            request = f"ADMIN|CHANGE_PRICE|{meal_id}|{new_price}|{user_id}"
             response = send_request(request)
             print(response)
 

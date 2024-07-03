@@ -4,7 +4,6 @@ from server.admin import Admin
 from server.chef import Chef
 from server.employee import Employee
 from server.database import get_db_connection
-import json
 
 def authenticate_user(username, password):
     try:
@@ -56,18 +55,20 @@ def handle_client(client_socket):
 
         if role == "ADMIN":
             admin_handler = Admin(role, "gaurav")
+            print()
             if command == "ADD_MEAL":
-                if len(args) == 3:  # Ensure correct number of arguments
+                if len(args) == 5:  # Ensure correct number of arguments
                     name = parts[2]
                     price = parts[3]
                     availability = parts[4]
-                    response = admin_handler.add_meal(name, price, availability)
+                    category = parts[6]
+                    response = admin_handler.add_meal(name, price, availability,category=category)
                 else:
                     response = "Invalid number of arguments for ADD_MEAL command"
 
 
             elif command == "REMOVE_MEAL":
-                if len(args) == 1:  # Ensure correct number of arguments
+                if len(args) == 2:  # Ensure correct number of arguments
                     meal_id = int(args[0])  # Convert meal_id to int
                     response = admin_handler.remove_meal(meal_id)
                 else:
@@ -86,7 +87,7 @@ def handle_client(client_socket):
 
 
             elif command == "CHANGE_PRICE":
-                if len(args) == 2:  # Ensure correct number of arguments
+                if len(args) >= 2:  # Ensure correct number of arguments
                     meal_id = int(args[0])  # Convert meal_id to int
                     new_price = float(args[1])  # Convert new_price to float
                     response = admin_handler.change_price(meal_id, new_price)
@@ -106,12 +107,6 @@ def handle_client(client_socket):
 
 
 
-        # elif role == "CHEF":
-        #     chef_handler = Chef()
-        #     if command == "RECOMMEND_MEALS":
-        #         response = chef_handler.recommend_meals(*args)
-        #     else:
-        #         response = "Invalid command for Chef"
 
         elif role == "CHEF":
             chef_handler = Chef(role, "gaurav")  # Adjust as needed
@@ -124,13 +119,26 @@ def handle_client(client_socket):
                 if len(args) == 0:  # Ensure correct number of arguments
                     response = chef_handler.broadcast_meals()
                 else:
-                    response = "Can not Broadcastv meals Right now"
-            elif command == "VIEW_NOTIFICATIONS":
-                response = chef_handler.view_notifications()
+                    response = "Can not Broadcast meals Right now"
+            # elif command == "VIEW_NOTIFICATIONS":
+            #     response = chef_handler.view_notifications()
             elif command == "VIEW_TODAYS_MENU":
                 response = chef_handler.get_today_menu()
             elif command == "SHOW_MEAL_RATINGS":
                 response = chef_handler.get_ratings()
+            elif command == "SHOW_DISCARD_LIST":
+                response = chef_handler.get_discard_list()
+            elif command == "GET_DETAILED_FEEDBACK":
+                response = chef_handler.get_discard_list()
+            elif command == "REMOVE_FOOD_ITEM":
+                print(parts,len(args))
+                if len(args) == 1:  # Ensure correct number of arguments
+                    meal_id = int(args[0])  # Convert meal_id to int
+                    response = chef_handler.remove_meal(meal_id)
+                else:
+                    response = "Invalid number of arguments for REMOVE_MEAL command"
+            elif command == "SHOW_POST_DISCARD_MENU":
+                response = chef_handler.get_discard_list()
             elif command == "LOGOUT":
                 response = "Logout from Chef Successfull!!"
             else:
@@ -138,17 +146,20 @@ def handle_client(client_socket):
 
 
         elif role == "EMPLOYEE":
-            employee_handler = Employee(1,"gaurav", "Admin")  # Adjust as needed
+            employee_handler = Employee(3,"Charlie Brown", role)  # Adjust as needed
 
             if command == "VOTE_MEAL":
-                if len(args) == 0:  # Ensure correct number of arguments
+                user_id = parts[2]
+                if len(args) == 1:  # Ensure correct number of arguments
+                    employee_handler = Employee(user_id, "Charlie Brown", role)
                     # meal_id = int(args[0])  # Convert meal_id to int
                     response = employee_handler.vote_for_meal()
                 else:
                     response = "Invalid number of arguments for VOTE_FOR_MEAL command"
-
+            elif command == 'STORE_VOTE':
+                response = employee_handler.store_vote(parts[2], user_id=parts[3])
             elif command == "GIVE_FEEDBACK":
-                if len(args) == 3:  # Ensure correct number of arguments
+                if len(args) == 4:  # Ensure correct number of arguments
                     # print("args ", args)
                     meal_id = int(args[0])
                     rating = int(args[1])
@@ -157,19 +168,12 @@ def handle_client(client_socket):
                 else:
                     response = "Invalid number of arguments for GIVE_FEEDBACK command"
 
-            elif command == "SEE_MENU":
-                response = employee_handler.see_menu()
+            elif command == "NOTIFICATION":
+                employee_handler = Employee(parts[2], "Charlie Brown", role)
+                response = employee_handler.notification(parts[2])
             elif command == "VIEW_TODAY_MENU":
                 response = employee_handler.get_today_menu()
                 print(response)
-                # food_item_id = response['foodItemID']
-                # food_item_name = response.get('itemName')
-                # vote_count = response['voteCount']
-                # print(f"Today's Menu:")
-                # print(f"Most Voted Food Item: {food_item_name} (Food Item ID: {food_item_id})")
-                # print(f"Votes Received: {vote_count}")
-                #
-                # response = json.dumps(response)
             elif command == "LOGOUT":
                 response = "Logout from Employee Successfull!!"
             else:

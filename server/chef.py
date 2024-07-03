@@ -1,8 +1,8 @@
 from server.database import get_db_connection
 import numpy as np
-import json
+import json,re
 import datetime
-
+from server.utils import add_notification,get_all_employee_ids,get_top_meals_by_category
 
 class Chef:
     def __init__(self,  role,name):
@@ -19,24 +19,25 @@ class Chef:
 
             # Fetch meal ratings and comments from the feedback table
             cursor.execute("""
-                SELECT foodItemID, rating, comment
+                SELECT foodItemID, rating, comment,category
                 FROM Feedback
             """)
             feedbacks = cursor.fetchall()
 
             # Dictionary to hold the aggregated data
             meal_data = {}
-            for foodItemID, rating, comment in feedbacks:
+            for foodItemID, rating, comment,category in feedbacks:
                 if foodItemID not in meal_data:
-                    meal_data[foodItemID] = {'ratings': [], 'comments': []}
+                    meal_data[foodItemID] = {'ratings': [], 'comments': [], 'category': []}
                 meal_data[foodItemID]['ratings'].append(rating)
                 meal_data[foodItemID]['comments'].append(comment)
-
+                meal_data[foodItemID]['category'].append(category)
             # Calculate average ratings and sentiment scores
             meal_scores = []
             for meal_id, data in meal_data.items():
                 ratings = data['ratings']
                 comments = data['comments']
+                category = data['category'][0]
 
                 if ratings:  # Check if there are ratings for this meal
                     avg_rating = np.mean(ratings)
@@ -54,15 +55,18 @@ class Chef:
                     'meal_id': meal_id,
                     'avg_rating': avg_rating,
                     'sentiment_score': sentiment_score,
-                    'recommendation_score': recommendation_score
+                    'recommendation_score': recommendation_score,
+                    'Category': category
                 })
-
+            print("meal scores list : ", meal_scores)
             # Sort meals by recommendation score and return top 5
-            top_meals = sorted(meal_scores, key=lambda x: x['recommendation_score'], reverse=True)[:5]
+            top_meals_by_category = get_top_meals_by_category(meal_scores)
+            # top_meals = sorted(meal_scores, key=lambda x: x['recommendation_score'], reverse=True)[:5]
             # self.pretty_print_recommend_meals(top_meals)
+            print("top_meals_by_category", top_meals_by_category )
 
             # Convert top_meals to JSON string
-            top_meals_json = json.dumps(top_meals)
+            top_meals_json = json.dumps(top_meals_by_category)
             cursor.close()
             connection.close()
             return top_meals_json
@@ -70,6 +74,61 @@ class Chef:
         except Exception as e:
             print(f"Error recommending meals: {e}")
             return []
+    def get_discard_list(self):
+        discard_list = []
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            cursor.execute("""
+                SELECT foodItemID, rating, comment,category
+                FROM Feedback
+            """)
+            feedbacks = cursor.fetchall()
+            # Dictionary to hold the aggregated data
+            meal_data = {}
+            for foodItemID, rating, comment,category in feedbacks:
+                if foodItemID not in meal_data:
+                    meal_data[foodItemID] = {'ratings': [], 'comments': [], 'category': []}
+                meal_data[foodItemID]['ratings'].append(rating)
+                meal_data[foodItemID]['comments'].append(comment)
+                meal_data[foodItemID]['category'].append(category)
+            # Calculate average ratings and sentiment scores
+            meal_scores = []
+
+            for meal_id, data in meal_data.items():
+                ratings = data['ratings']
+                comments = data['comments']
+                category = data['category'][0]
+                if ratings:  # Check if there are ratings for this meal
+                    avg_rating = np.mean(ratings)
+                else:
+                    avg_rating = 0  # Default to 0 if no ratings
+
+                sentiment_score = self.calculate_sentiment_score(comments)
+
+                # Handle cases where sentiment_score could be None
+                if sentiment_score is None:
+                    sentiment_score = 0
+
+                recommendation_score = (avg_rating + sentiment_score) / 2
+                if recommendation_score < 2:
+                    cursor.execute("""
+                                        select itemName from fooditem where foodItemID = %s
+                                    """, (meal_id, ))
+
+                    result = cursor.fetchone()
+                    meal_name = result[0]
+                    print(meal_name)
+                    l= []
+                    l.append(meal_id)
+                    l.append(meal_name)
+                    discard_list.append(l)
+                print("Discard list: ", discard_list)
+            return json.dumps(discard_list)
+        except Exception as e:
+            print(f"Error in getting Discard Item List meals: {e}")
+            return []
+
 
     def calculate_sentiment_score(self, comments):
         positive_keywords = ['good', 'great', 'excellent', 'amazing', 'delicious']
@@ -97,41 +156,52 @@ class Chef:
 
             connection = get_db_connection()
             cursor = connection.cursor()
-
+            # print("Recommended meals : ",recommended_meals)
             print("\nBroadcasting recommended meals to employees:")
+            top_meals = []
             for meal in recommended_meals:
-                foodItemID = meal['meal_id']
-                cursor.execute("""
-                            select itemName from FoodItem where foodItemID = %s """, (foodItemID,))
-                food_item_name = cursor.fetchone()
-                print(f"Meal ID: {meal['meal_id']},Food Item Name: {food_item_name[0]} Average Rating: {meal['avg_rating']}, Sentiment Score: {meal['sentiment_score']}")
+                for list in recommended_meals[meal]:
+                    foodItemID = list['meal_id']
+                    cursor.execute("""
+                                select itemName from FoodItem where foodItemID = %s """, (foodItemID,))
+                    food_item_name = cursor.fetchone()
+                    top_meals.append(f"Meal ID: {list['meal_id']},Food Item Name: {food_item_name} Average Rating: {list['avg_rating']}, Sentiment Score: {list['sentiment_score']}, Category: {list['Category']}")
+
 
             # Finalize top 3 meals based on chef's choice (example: first three meals)
-            top_meals = recommended_meals[:3]
+
+            print("top meals: ", top_meals)
 
             # Insert top 3 meals into the Recommendation table
 
+            meal_id_pattern = r'Meal ID: (\d+)'
+            category_pattern = r'Category: (\w+)'
 
             for meal in top_meals:
-                meal_id = meal['meal_id']
-                # chef_id = self.user_id
-                date = datetime.date.today()
-                chef_id = "5"
-                cursor.execute("""
-                    INSERT INTO Recommendation (date, chefID, foodItemID)
-                    VALUES (%s, %s, %s)
-                """, (date,chef_id,  meal_id))
-
-                print(f"Meal ID {meal_id} broadcasted to employees.")
-
+                meal_id_match = re.search(meal_id_pattern, meal)
+                category_match = re.search(category_pattern, meal)
+                if meal_id_match and category_match:
+                    meal_id = meal_id_match.group(1)
+                    category = category_match.group(1)
+                    date = datetime.date.today()
+                    chef_id = "5"
+                    cursor.execute("""
+                    INSERT INTO Recommendation (date, chefID, foodItemID, category)
+                    VALUES (%s, %s, %s,%s)
+                """, (date, chef_id,  meal_id, category))
+                    print(f"Meal ID {meal_id} broadcasted to employees.")
+                else:
+                    print(f"Could not extract information from meal: {meal}")
             connection.commit()
             cursor.close()
             connection.close()
 
             # Simulate sending selected items to all employees in their VOTE_FOR_MEAL menu
-            response_message = "\nSending selected items to all employees in their VOTE_FOR_MEAL menu..."
+            response_message = json.dumps(top_meals)
             # print(response_message)
-
+            employee_ids = get_all_employee_ids()
+            for employee_id in employee_ids:
+                add_notification(employee_id, "Chef had broadcasted top meals, You can vote now for your preference of tomorrow's meal.")
             return response_message
 
         except Exception as e:
@@ -139,9 +209,7 @@ class Chef:
             print(error_message)
             return error_message
 
-    def publish_monthly_report(self):
-        # Generate and publish a monthly report
-        pass
+
 
     def get_today_menu(self):
         try:
@@ -222,4 +290,15 @@ class Chef:
             print(error_message)
             return []
 
+    def remove_meal(self, meal_id):
+        connection = get_db_connection()
+        cursor = connection.cursor()
 
+        cursor.execute("DELETE FROM FoodItem WHERE foodItemID = %s", (meal_id,))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        employee_ids = get_all_employee_ids()
+        for employee_id in employee_ids:
+            add_notification(employee_id, f"Meal id: '{meal_id}' removed successfully by the admin.")
+        return f"Meal with ID '{meal_id}' removed successfully."
