@@ -132,7 +132,7 @@ def handle_questions(response,user_id):
 
     for item in food_item_id_name_dict:
         food_item_name = item['foodItemName']
-        food_item_id = int(item['foodItemID'])
+        food_item_id = item['foodItemID']
         questions = [
                 f"What didn’t you like about {food_item_name}?",
                 f"How would you like {food_item_name} to taste?",
@@ -145,13 +145,13 @@ def handle_questions(response,user_id):
         for question in questions:
             answer = input(f"{question}\n")
             answers.append(answer)
-
+        print("answers : ", answers)
         # Step 4: Save the responses in the DetailedFeedback table
         for question, answer in zip(questions, answers):
             cursor.execute("""
                             INSERT INTO DetailedFeedback (foodItemID, question, answer, userID)
                             VALUES ((SELECT foodItemID FROM FoodItem WHERE itemName = %s), %s, %s, %s)
-                        """, (food_item_id, question, answer, user_id))
+                        """, (food_item_name, question, answer, user_id))
         print("Thank you for your feedback. It has been recorded successfully.")
 
 
