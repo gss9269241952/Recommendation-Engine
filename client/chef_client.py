@@ -44,13 +44,19 @@ def chef_menu():
             request = "CHEF|VIEW_TODAYS_MENU"
             response = send_request(request)
             response = json.loads(response)
-            food_item_id = response['foodItemID']
-            food_item_name = response['itemName']
-            vote_count = response['voteCount']
 
-            print(f"Today's Menu:")
-            print(f"Most Voted Food Item: {food_item_name} (Food Item ID: {food_item_id})")
-            print(f"Votes Received: {vote_count}")
+            if 'foodItemID' in response:
+                food_item_id = response['foodItemID']
+                food_item_name = response['itemName']
+                vote_count = response['voteCount']
+
+                print("Today's Menu:")
+                print(f"Most Voted Food Item: {food_item_name} (Food Item ID: {food_item_id})")
+                print(f"Votes Received: {vote_count}")
+            else:
+
+                print(response)
+
             # print(response)
 
         elif choice == '4':

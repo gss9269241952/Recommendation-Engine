@@ -2,7 +2,7 @@ from server.database import get_db_connection
 import datetime
 import numpy as np
 import json
-from server.utils import get_top_meals_by_category
+from server.utils import get_top_meals_by_category,get_food_item_profile_data,get_user_profile_data
 
 class Employee:
     def __init__(self, user_id, name, role):
@@ -150,31 +150,57 @@ class Employee:
         top_recommendations = self.recommend_meals()
 
         j_top_recommendations = json.loads(top_recommendations)
-        # print(type(j_top_recommendations),j_top_recommendations)
-        # j_top_recommendation = j_top_recommendations[:6]
+
         try:
-            index = 1
+            # Step 1: Fetch user profile data
+            user_profile = get_user_profile_data(user_id)
+
+            # Step 2: Fetch food item profile data
+            meal_ids = [meal['meal_id'] for category, meals in j_top_recommendations.items() for meal in meals]
+            food_item_profiles = get_food_item_profile_data(meal_ids)
+
+            # Step 3: Prepare the recommendations list with added food item profile data
             recommendations = []
+            index = 1
             for category, meals in j_top_recommendations.items():
-                for idx, meal in enumerate(meals, start=1):
+                for meal in meals:
+                    food_item_profile = food_item_profiles[meal['meal_id']]
                     recommendations.append({
                         'index': index,
                         'meal_id': meal['meal_id'],
                         'recommendation_score': meal['recommendation_score'],
-                        'Category': meal['Category']
+                        'Category': meal['Category'],
+                        'diet_preference': food_item_profile['dietPreference'],
+                        'spice_level': food_item_profile['spiceLevel'],
+                        'cuisine_preference': food_item_profile['cuisinePreference'],
+                        'sweet_tooth': food_item_profile['sweetTooth']
                     })
-                    index+=1
-            print("recommendations list: ",recommendations)
+                    index += 1
+
+            # Step 4: Sort the recommendations based on user profile
+            def sort_key(recommendation):
+                score = 0
+                if recommendation['diet_preference'] == user_profile['dietPreference']:
+                    score += 3
+                if recommendation['spice_level'] == user_profile['spiceLevel']:
+                    score += 2
+                if recommendation['cuisine_preference'] == user_profile['cuisinePreference']:
+                    score += 2
+                if recommendation['sweet_tooth'] == user_profile['sweetTooth']:
+                    score += 1
+                return score
+
+            recommendations.sort(key=sort_key, reverse=True)
+            print("recommendations_sorted_based_on_profile", recommendations)
             return json.dumps({
                 'status': 'success',
                 'recommendations': recommendations
             })
-
-        except (IndexError, ValueError) as e:
+        except Exception as e:
+            print("Error in generating recommendations: ", str(e))
             return json.dumps({
-                'status': 'error',
-                'message': f"Invalid input. Please enter a valid number between 1 and 3.",
-                'error_details': str(e)
+                'status': 'failure',
+                'error': str(e)
             })
 
     def store_vote(self, food_item_id,user_id):
@@ -293,4 +319,74 @@ Votes Received: {vote_count}
 
         j_notifications = json.dumps([n[1] for n in notifications])
         return j_notifications
+
+    import mysql.connector
+
+    def get_detailed_feedback_discard_item(self, user_id):
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        # Step 1: Retrieve notifications related to detailed feedback for the given user
+        cursor.execute("""
+            SELECT notificationID, message 
+            FROM Notification 
+            WHERE userID = %s AND message LIKE 'We are trying to improve your experience with%'
+        """, (user_id,))
+        notifications = cursor.fetchall()
+
+
+        if not notifications:
+            print("No detailed feedback requests found.")
+            return json.dumps([])  # Return an empty list if no notifications are found
+
+        food_item_list = []
+
+        for notification in notifications:
+
+            message = notification[1]
+
+
+
+            # Extract the food item name from the message
+            food_item_name = message.split("with")[1].split(".")[0].strip()
+            # Fetch the foodItemID using the food item name
+            cursor.execute("""
+                SELECT foodItemID 
+                FROM FoodItem 
+                WHERE itemName = %s
+            """, (food_item_name,))
+            result = cursor.fetchone()
+
+            if result:
+                food_item_id = result[0]
+                food_item_list.append({
+                    "foodItemID": food_item_id,
+                    "foodItemName": food_item_name
+                })
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return json.dumps(food_item_list)
+
+####complexity 2
+    def update_profile(self, profile_data):
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            INSERT INTO EmployeeProfile (userID, dietPreference, spiceLevel, cuisinePreference, sweetTooth)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+                dietPreference = VALUES(dietPreference),
+                spiceLevel = VALUES(spiceLevel),
+                cuisinePreference = VALUES(cuisinePreference),
+                sweetTooth = VALUES(sweetTooth)
+        """, (
+        self.user_id, profile_data['diet_preference'], profile_data['spice_level'], profile_data['cuisine_preference'],
+        profile_data['sweet_tooth']))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return json.dumps({'status': 'success', 'message': 'Profile updated successfully.'})
 

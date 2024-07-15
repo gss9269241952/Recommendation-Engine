@@ -1,6 +1,6 @@
 from server.database import get_db_connection
 import numpy as np
-import json,re
+import json, re
 import datetime
 from server.utils import add_notification,get_all_employee_ids,get_top_meals_by_category
 
@@ -129,7 +129,32 @@ class Chef:
             print(f"Error in getting Discard Item List meals: {e}")
             return []
 
+    def get_detailed_feedback(self,meal_id):
+        connection = get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT itemName FROM fooditem WHERE foodItemID = %s", (meal_id,))
+        result = cursor.fetchone()
 
+        if not result:
+            print(f"No food item found with the id '{meal_id}'.")
+            return
+        food_item_name = result[0]
+        print("food_item_name :",food_item_name)
+        # Roll out questions
+        detailed_feedback_notification_str = f"""We are trying to improve your experience with {food_item_name}. Please provide your feedback in the detailed feedback tab and help us.
+            \n1. What did not you like about {food_item_name}?",
+            \n2. How would you like {food_item_name} to taste?",
+            \n3. Share your mom’s recipe for {food_item_name}"""
+
+        employee_ids = get_all_employee_ids()
+        for employee_id in employee_ids:
+            add_notification(employee_id,detailed_feedback_notification_str)
+
+        connection.commit()
+        connection.close()
+
+        get_detailed_feedback_success_initiation = f"Feedback collection for {food_item_name} has been initiated and will be reviewed soon."
+        return json.dumps(get_detailed_feedback_success_initiation)
     def calculate_sentiment_score(self, comments):
         positive_keywords = ['good', 'great', 'excellent', 'amazing', 'delicious']
         negative_keywords = ['bad', 'terrible', 'awful', 'horrible', 'poor']
@@ -153,7 +178,6 @@ class Chef:
     def broadcast_meals(self):
         try:
             recommended_meals = json.loads(self.recommend_meals())
-
             connection = get_db_connection()
             cursor = connection.cursor()
             # print("Recommended meals : ",recommended_meals)
@@ -212,9 +236,10 @@ class Chef:
 
 
     def get_today_menu(self):
+        connection = get_db_connection()
+        cursor = connection.cursor()
         try:
-            connection = get_db_connection()
-            cursor = connection.cursor()
+
 
             # Query to find the most voted food item for today
             cursor.execute("""
@@ -248,7 +273,7 @@ class Chef:
 
             else:
                 error_msg = "No votes recorded for today yet."
-                return error_msg
+                return json.dumps(error_msg)
         except Exception as e:
             print(f"Error fetching today's menu: {e}")
 
@@ -302,3 +327,36 @@ class Chef:
         for employee_id in employee_ids:
             add_notification(employee_id, f"Meal id: '{meal_id}' removed successfully by the admin.")
         return f"Meal with ID '{meal_id}' removed successfully."
+
+    def get_detailed_feedback_from_user(self, meal_id):
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        # Fetch feedback for the given meal_id
+        cursor.execute("""
+            SELECT question, answer, userID, date
+            FROM DetailedFeedback
+            WHERE foodItemID = %s
+            ORDER BY date DESC
+        """, (meal_id,))
+
+        feedback = cursor.fetchall()
+
+        if not feedback:
+            no_feedback = f"No feedback found for meal ID {meal_id}."
+            return json.dumps(no_feedback)
+
+        # Format the feedback into a readable format
+        formatted_feedback = []
+        for entry in feedback:
+            question, answer, user_id, date = entry
+            formatted_feedback.append({
+                'question': question,
+                'answer': answer,
+                'user_id': user_id,
+                'date': date.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        connection.close()
+
+        return json.dumps(formatted_feedback)

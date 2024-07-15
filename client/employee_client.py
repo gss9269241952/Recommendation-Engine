@@ -1,6 +1,6 @@
 import socket
 import json
-
+from client.client_utils import handle_questions,update_profile, handle_client_vote_meal
 def send_request(request):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect(('localhost', 9998))
@@ -16,7 +16,9 @@ def employee_menu(user_id):
 2. Give Feedback
 3. View Notifications
 4. View Today's Menu
-5. Logout
+5. Give Detailed Feedback for Discard Item
+6. Update your Profile
+7. Logout
 ------------------------------->
             """
         print(employee_menu)
@@ -24,34 +26,15 @@ def employee_menu(user_id):
         if choice == '1':
             request = f"EMPLOYEE|VOTE_MEAL|{user_id}"
             response = send_request(request)
-            if response:
-                response_data = json.loads(response)
-                if response_data['status'] == 'success':
-                    recommendations = response_data['recommendations']
-                    print("\n=== Today's Top Meal Recommendations ===")
-                    print("Please vote for your preferred meal by entering the number:")
-                    print("========================================\n")
-                    for recommendation in recommendations:
-                        print(
-                            f"{recommendation['index']}. Meal ID: {recommendation['meal_id']}, Recommendation Score: {recommendation['recommendation_score']}, Category : {recommendation['Category']}")
-
-                    selected_option = int(input("\nEnter your choice (1-6): "))
-                    selected_meal = recommendations[selected_option - 1]
-                    print("selected_meal", selected_meal)
-
-                    # Sending vote back to the server
-                    vote_request = f"EMPLOYEE|STORE_VOTE|{selected_meal['meal_id']}|{user_id}"
-                    vote_response = send_request(vote_request)
-                    if vote_response:
-                        print(vote_response)
-                    else:
-                        print("Failed to store vote.")
-                else:
-                    print(response_data['message'])
-                    print(f"Error details: {response_data['error_details']}")
+            selected_meal = handle_client_vote_meal(response)
+            # Sending vote back to the server
+            vote_request = f"EMPLOYEE|STORE_VOTE|{selected_meal['meal_id']}|{user_id}"
+            vote_response = send_request(vote_request)
+            if vote_response:
+                print(vote_response)
             else:
-                print("Failed to get recommendations.")
-            # print(response)
+                print("Failed to store vote.")
+
 
         elif choice == '2':
             meal_id = input("Enter meal ID to give feedback for: ")
@@ -72,8 +55,19 @@ def employee_menu(user_id):
             request = "EMPLOYEE|VIEW_TODAY_MENU"
             response = send_request(request)
 
-            print(response)
         elif choice == '5':
+            request = f"EMPLOYEE|GET_DETAILED_FEEDBACK_DISCARD_ITEM|{user_id}"
+            response = send_request(request)
+            updated_response = handle_questions(response,user_id)
+            print(updated_response)
+
+        elif choice == '6':
+            user_profile_data = update_profile()
+            request = f"EMPLOYEE|UPDATE_PROFILE|{json.dumps(user_profile_data)}|{user_id}"
+            response = send_request(request)
+            print(response)
+
+        elif choice == '7':
             request = f"EMPLOYEE|LOGOUT"
             response = send_request(request)
             print(response)

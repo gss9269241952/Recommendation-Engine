@@ -4,6 +4,7 @@ from server.admin import Admin
 from server.chef import Chef
 from server.employee import Employee
 from server.database import get_db_connection
+import json
 
 def authenticate_user(username, password):
     try:
@@ -129,12 +130,23 @@ def handle_client(client_socket):
             elif command == "SHOW_DISCARD_LIST":
                 response = chef_handler.get_discard_list()
             elif command == "GET_DETAILED_FEEDBACK":
-                response = chef_handler.get_discard_list()
+                if len(args) == 1:  # Ensure correct number of arguments
+                    meal_id = int(args[0])  # Convert meal_id to int
+                    response = chef_handler.get_detailed_feedback(meal_id)
+                else:
+                    response = "Invalid number of arguments for GET_DETAILED_FEEDBACK command"
+
             elif command == "REMOVE_FOOD_ITEM":
-                print(parts,len(args))
                 if len(args) == 1:  # Ensure correct number of arguments
                     meal_id = int(args[0])  # Convert meal_id to int
                     response = chef_handler.remove_meal(meal_id)
+                else:
+                    response = "Invalid number of arguments for REMOVE_MEAL command"
+
+            elif command == "VIEW_DETAILED_FEEDBACK_FROM_USER":
+                if len(args) == 1:  # Ensure correct number of arguments
+                    meal_id = int(args[0])  # Convert meal_id to int
+                    response = chef_handler.get_detailed_feedback_from_user(meal_id)
                 else:
                     response = "Invalid number of arguments for REMOVE_MEAL command"
             elif command == "SHOW_POST_DISCARD_MENU":
@@ -174,6 +186,19 @@ def handle_client(client_socket):
             elif command == "VIEW_TODAY_MENU":
                 response = employee_handler.get_today_menu()
                 print(response)
+            elif command == "GET_DETAILED_FEEDBACK_DISCARD_ITEM":
+                if len(args) == 1:  # Ensure correct number of arguments
+                    user_id = int(args[0])  # Convert meal_id to int
+                    response = employee_handler.get_detailed_feedback_discard_item(user_id)
+                else:
+                    response = "Invalid number of arguments for GET_DETAILED_FEEDBACK_DISCARD_ITEM command"
+
+            elif command == "UPDATE_PROFILE":
+                profile_data = json.loads(parts[2])
+                print("profile_date", profile_data)
+                response = employee_handler.update_profile(profile_data)
+                print(response)
+
             elif command == "LOGOUT":
                 response = "Logout from Employee Successfull!!"
             else:
