@@ -3,7 +3,7 @@ import threading
 from server.admin import Admin
 from server.chef import Chef
 from server.employee import Employee
-from server.database import get_db_connection
+from database.database import get_db_connection
 import json
 
 def authenticate_user(username, password):
@@ -58,12 +58,13 @@ def handle_client(client_socket):
             admin_handler = Admin(role, "gaurav")
             print()
             if command == "ADD_MEAL":
-                if len(args) == 5:  # Ensure correct number of arguments
+                if len(args) == 9:  # Ensure correct number of arguments
                     name = parts[2]
                     price = parts[3]
                     availability = parts[4]
                     category = parts[6]
-                    response = admin_handler.add_meal(name, price, availability,category=category)
+                    diet_preference, spice_level, cuisine_preference, sweet_tooth = parts[7], parts[8], parts[9], parts[10]
+                    response = admin_handler.add_meal(name, price, availability, category, diet_preference, spice_level, cuisine_preference, sweet_tooth)
                 else:
                     response = "Invalid number of arguments for ADD_MEAL command"
 
@@ -94,7 +95,8 @@ def handle_client(client_socket):
                     response = admin_handler.change_price(meal_id, new_price)
                 else:
                     response = "Invalid number of arguments for CHANGE_PRICE command"
-
+            elif command == "SHOW_MENU":
+                response = admin_handler.get_menu()
             elif command == "CHECK_AVAILABILITY":
                 if len(args) == 1:  # Ensure correct number of arguments
                     meal_id = int(args[0])  # Convert meal_id to int

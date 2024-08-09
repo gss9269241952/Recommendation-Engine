@@ -49,11 +49,10 @@ def employee_menu(user_id):
             response = send_request(request)
             print(response)
 
-
         elif choice == '4':
-
             request = "EMPLOYEE|VIEW_TODAY_MENU"
             response = send_request(request)
+            print(response)
 
         elif choice == '5':
             request = f"EMPLOYEE|GET_DETAILED_FEEDBACK_DISCARD_ITEM|{user_id}"
@@ -71,7 +70,7 @@ def employee_menu(user_id):
             request = f"EMPLOYEE|LOGOUT"
             response = send_request(request)
             print(response)
-            if "Logout from Admin Successfull!!" in response:
+            if "Logout from Employee Successfull!!" in response:
                 return True
 
         else:

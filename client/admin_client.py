@@ -1,6 +1,8 @@
 # In client/admin_client.py
 import socket
+from client.client_utils import get_user_preferences, beautify_food_items
 
+import json
 def send_request(request):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect(('localhost', 9998))
@@ -21,7 +23,8 @@ def admin_menu(user_id, role):
     3. Update Meal
     4. Change Price
     5. Check Availability
-    6. Exit
+    6. Show Menu
+    7. Exit
 ------------------------------->
             """
         print(admin_menu)
@@ -32,7 +35,9 @@ def admin_menu(user_id, role):
             price = input("Enter price: ")
             availability = input("Enter availability (yes/no): ")
             category = input("Enter category (Breakfast/Lunch/Dinner) ")
-            request = f"ADMIN|ADD_MEAL|{meal_name}|{price}|{availability}|{user_id}|{category}"
+            diet_preference, spice_level, cuisine_preference, sweet_tooth = get_user_preferences()
+            request = f"ADMIN|ADD_MEAL|{meal_name}|{price}|{availability}|{user_id}|{category}|{diet_preference}|{spice_level}|{cuisine_preference}|{sweet_tooth}"
+            print("Request :", request)
             response = send_request(request)
             print(response)
 
@@ -65,11 +70,19 @@ def admin_menu(user_id, role):
             print(response)
 
         elif choice == '6':
+            request = f"ADMIN|SHOW_MENU"
+            response = send_request(request)
+            response = json.loads(response)
+            # print("res", response)
+            beautify_food_items(response)
+
+        elif choice == '7':
             request = f"ADMIN|LOGOUT"
             response = send_request(request)
             print(response)
             if "Logout from Admin Successfull!!" in response:
                 return True
+
 
         else:
             print("Invalid choice. Please try again.")

@@ -14,16 +14,6 @@ def send_request(request):
     client_socket.close()
     return response
 
-# def authenticate_user(username, password):
-#     request = f"AUTH|{username}|{password}"
-#     response = send_request(request)
-#     print("response: ",response)
-#     if response.startswith("SUCCESS"):
-#         user_id, role = response.split('|')[1:]
-#         return user_id, role.lower()
-#     else:
-#         return None, None
-
 def run_client():
     time.sleep(1)  # Ensure server starts first
     try:

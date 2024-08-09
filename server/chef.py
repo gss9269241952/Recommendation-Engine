@@ -1,4 +1,4 @@
-from server.database import get_db_connection
+from database.database import get_db_connection
 import numpy as np
 import json, re
 import datetime
@@ -314,6 +314,7 @@ class Chef:
             error_message = f"Error fetching ratings: {e}"
             print(error_message)
             return []
+
 
     def remove_meal(self, meal_id):
         connection = get_db_connection()

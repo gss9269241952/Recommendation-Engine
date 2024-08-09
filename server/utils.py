@@ -1,6 +1,7 @@
 import hashlib
-from server.database import get_db_connection
-from datetime import datetime
+from database.database import get_db_connection
+
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
@@ -40,7 +41,7 @@ def get_top_meals_by_category(meal_scores):
 def get_user_profile_data(user_id):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
-
+    print("user_id", user_id)
     cursor.execute("""
         SELECT dietPreference, spiceLevel, cuisinePreference, sweetTooth 
         FROM EmployeeProfile 

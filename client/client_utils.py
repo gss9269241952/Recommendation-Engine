@@ -1,6 +1,6 @@
 import json
 import socket
-from server.database import get_db_connection
+from database.database import get_db_connection
 def send_request(request):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect(('localhost', 9998))
@@ -8,6 +8,24 @@ def send_request(request):
     response = client_socket.recv(4096).decode()
     client_socket.close()
     return response
+
+
+def beautify_food_items(food_items):
+    if not food_items:
+        print("No food items to display.")
+        return
+
+    print("\nFood Items:\n")
+    print("|| {:^10} || {:^20} || {:^13} || {:^10} || {:^10} ||".format("Food ID", "Item Name", "Availability",
+                                                                        "Category", "Price"))
+    print("||" + "-" * 12 + "++" + "-" * 22 + "++" + "-" * 15 + "++" + "-" * 12 + "++" + "-" * 12 + "||")
+
+    for item in food_items:
+        print(
+            f"|| {item['foodItemID']:>8} || {item['itemName']:^20} || {('Available' if item['availability'] else 'Not Available'):^13} || {item['category']:^10} || {item.get('price', 'N/A'):>8} ||")
+
+    print("||" + "-" * 12 + "++" + "-" * 22 + "++" + "-" * 15 + "++" + "-" * 12 + "++" + "-" * 12 + "||")
+
 
 def pretty_print_ratings(ratings):
     print("\nRatings and Comments for Food Items:\n")
@@ -195,6 +213,44 @@ def update_profile():
 
     return profile_data
 
+
+def get_user_preferences():
+    def get_preference(prompt, options):
+        while True:
+            try:
+                choice = input(prompt)
+                if choice not in options:
+                    raise ValueError("Invalid choice")
+                return options[choice]
+            except ValueError as e:
+                print(e)
+
+    diet_options = {
+        '1': 'Vegetarian',
+        '2': 'Non Vegetarian',
+        '3': 'Eggetarian'
+    }
+    spice_options = {
+        '1': 'High',
+        '2': 'Medium',
+        '3': 'Low'
+    }
+    cuisine_options = {
+        '1': 'North Indian',
+        '2': 'South Indian',
+        '3': 'Other'
+    }
+    sweet_tooth_options = {
+        '1': 'Yes',
+        '2': 'No'
+    }
+
+    diet_preference = get_preference("Please select one -\n1. Vegetarian\n2. Non Vegetarian\n3. Eggetarian\n", diet_options)
+    spice_level = get_preference("Please select Meal's spice level -\n1. High\n2. Medium\n3. Low\n", spice_options)
+    cuisine_preference = get_preference("Meal's Cusine Type -\n1. North Indian\n2. South Indian\n3. Other\n", cuisine_options)
+    sweet_tooth = get_preference("Is this Item Very Sweet? -\n1. Yes\n2. No\n", sweet_tooth_options)
+
+    return diet_preference, spice_level, cuisine_preference, sweet_tooth
 def handle_client_vote_meal(response):
     if response:
         response_data = json.loads(response)

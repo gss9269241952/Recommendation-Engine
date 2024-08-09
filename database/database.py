@@ -5,8 +5,8 @@ import os
 def get_db_connection():
     try:
         connection = mysql.connector.connect(
-            user='admin',
-            password='Football@11',
+            user='root',
+            password='root',
             host='localhost',
             database='recomendation_db'
         )

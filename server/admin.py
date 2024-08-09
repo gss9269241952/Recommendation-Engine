@@ -1,6 +1,9 @@
-from server.database import get_db_connection
+from database.database import get_db_connection
+import json
+
 from datetime import datetime
 from server.utils import add_notification,get_all_employee_ids
+
 
 class Admin:
     def __init__(self, name, role):
@@ -8,18 +11,28 @@ class Admin:
         self.name = name
         self.role = role
 
-    def add_meal(self, meal_name, price, availability,category):
+    def add_meal(self, meal_name, price, availability,category, diet_preference, spice_level, cuisine_preference, sweet_tooth):
         # print("called add_meal")
         connection = get_db_connection()
         cursor = connection.cursor()
         availability = availability.lower() == 'yes'
-
-        # Get current date and time
         current_datetime = datetime.now()
+
 
         cursor.execute(
             "INSERT INTO FoodItem (itemName, price, availability, date,category) VALUES (%s, %s, %s, %s, %s)",
             (meal_name, price, availability, current_datetime, category)
+        )
+
+        cursor.execute("SELECT LAST_INSERT_ID()")      # Get the newly inserted FoodItem
+        food_item_id = cursor.fetchone()[0]
+
+        cursor.execute(
+            """
+            INSERT INTO FoodItemProfile (foodItemID, dietPreference, spiceLevel, cuisinePreference, sweetTooth)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (food_item_id, diet_preference, spice_level, cuisine_preference, sweet_tooth)
         )
         connection.commit()
         cursor.close()
@@ -75,6 +88,40 @@ class Admin:
             add_notification(employee_id, f"Price for meal with ID '{meal_id}' changed to {new_price}.")
         return f"Price for meal with ID '{meal_id}' changed to {new_price}."
 
+    def get_menu(self):
+        try:
+            connection = get_db_connection()
+            cursor = connection.cursor()
+
+            # SQL query to fetch all menu items
+            query = """
+                SELECT foodItemID, itemName,  availability, category, price
+                FROM FoodItem
+            """
+            cursor.execute(query)
+            menu_data = cursor.fetchall()
+            cursor.close()
+            connection.close()
+            menu_data_serializable = [
+                {
+                    "foodItemID": item[0],
+                    "itemName": item[1],
+                    "availability": item[2],
+                    "category": item[3],
+                    "price": float(item[4])  # Convert Decimal to float
+                }
+                for item in menu_data
+            ]
+
+            # Serialize to JSON
+            j_menu = json.dumps(menu_data_serializable)
+            print("worked", j_menu)
+            return j_menu
+
+        except Exception as e:
+            error_message = f"Error fetching menu: {e}"
+            print(error_message)
+            return []
     def check_availability(self, meal_id):
         connection = get_db_connection()
         cursor = connection.cursor()
